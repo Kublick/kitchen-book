@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String          @id @default(uuid())
+  username  String          @unique
+  email     String          @unique
+  password  String?
+  Recipe    Recipe[]
+  sessionId String?
+  sessions  Session[]
+  oauth     oauth_account[]
+}
+
+model oauth_account {
+  id               Int    @id @default(autoincrement())
+  provider_id      String
+  provider_user_id String
+  userId           String
+  user             User   @relation(fields: [userId], references: [id])
+}
+
+model Category {
+  id     Int      @id @default(autoincrement())
+  name   String
+  Recipe Recipe[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+
+  user User @relation(references: [id], fields: [userId], onDelete: Cascade)
+}
+
+model Ingredient {
+  id       Int             @id @default(autoincrement())
+  name     String
+  amount   Float
+  unit     MeasurementUnit
+  recipeId Int
+  Recipe   Recipe          @relation(fields: [recipeId], references: [id])
+}
+
+model Recipe {
+  id          Int          @id @default(autoincrement())
+  title       String
+  procedure   String
+  description String
+  imageUrl    String
+  categoryId  Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime
+  userId      String
+  cookTime    Int
+  portions    Int
+  prepTime    Int
+  Ingredient  Ingredient[]
+  Category    Category     @relation(fields: [categoryId], references: [id])
+  User        User         @relation(fields: [userId], references: [id])
+}
+
+enum MeasurementUnit {
+  GRAMOS
+  KILOGRAMOS
+  MILLILITROS
+  LITROS
+  CUCHARADA
+  CUCHARADITA
+  TAZA
+  PIEZA
+  PIZCA
+}
