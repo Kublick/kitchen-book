@@ -38,7 +38,6 @@ export async function GET(request: Request): Promise<Response> {
       },
     });
     if (existingUser) {
-      console.log("🚀 ~ GET ~ existingUser:", existingUser);
     }
 
     const existingAccount = await prisma.oauth_account.findFirst({
@@ -62,36 +61,37 @@ export async function GET(request: Request): Promise<Response> {
           Location: "/",
         },
       });
-    } else {
-      const newUser = await prisma.user.create({
-        data: {
-          username: user.name,
-          email: user.email,
-        },
-      });
-
-      const oauthAccount = await prisma.oauth_account.create({
-        data: {
-          provider_id: "google",
-          provider_user_id: user.sub,
-          userId: newUser.id,
-        },
-      });
-
-      const session = await lucia.createSession(newUser.id, {});
-      const sessionCookie = lucia.createSessionCookie(session.id);
-      cookies().set(
-        sessionCookie.name,
-        sessionCookie.value,
-        sessionCookie.attributes
-      );
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: "/",
-        },
-      });
     }
+    // else {
+    //   const newUser = await prisma.user.create({
+    //     data: {
+    //       username: user.name,
+    //       email: user.email,
+    //     },
+    //   });
+
+    //   const oauthAccount = await prisma.oauth_account.create({
+    //     data: {
+    //       provider_id: "google",
+    //       provider_user_id: user.sub,
+    //       userId: newUser.id,
+    //     },
+    //   });
+
+    //   const session = await lucia.createSession(newUser.id, {});
+    //   const sessionCookie = lucia.createSessionCookie(session.id);
+    //   cookies().set(
+    //     sessionCookie.name,
+    //     sessionCookie.value,
+    //     sessionCookie.attributes
+    //   );
+    //   return new Response(null, {
+    //     status: 302,
+    //     headers: {
+    //       Location: "/",
+    //     },
+    //   });
+    // }
   } catch (e) {
     if (e instanceof OAuth2RequestError) {
       const { request, message, description } = e;
