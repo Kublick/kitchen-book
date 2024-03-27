@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { Argon2id } from "oslo/password";
 import { lucia } from "../lib/lucia";
 import { cookies } from "next/headers";
-import { Session, User } from "lucia";
+import type { Session, User } from "lucia";
 import { cache } from "react";
 
 export const RegisterUser = async (username: string, password: string) => {

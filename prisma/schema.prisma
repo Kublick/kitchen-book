@@ -16,6 +16,7 @@ model User {
   sessionId String?
   sessions  Session[]
   oauth     oauth_account[]
+  Favorite  Favorite[]
 }
 
 model oauth_account {
@@ -40,41 +41,38 @@ model Session {
   user User @relation(references: [id], fields: [userId], onDelete: Cascade)
 }
 
-model Ingredient {
-  id       Int             @id @default(autoincrement())
-  name     String
-  amount   Float
-  unit     MeasurementUnit
-  recipeId Int
-  Recipe   Recipe          @relation(fields: [recipeId], references: [id])
-}
-
 model Recipe {
-  id          Int          @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   title       String
   procedure   String
   description String
-  imageUrl    String
   categoryId  Int
-  createdAt   DateTime     @default(now())
+  createdAt   DateTime   @default(now())
   updatedAt   DateTime
   userId      String
   cookTime    Int
   portions    Int
   prepTime    Int
-  Ingredient  Ingredient[]
-  Category    Category     @relation(fields: [categoryId], references: [id])
-  User        User         @relation(fields: [userId], references: [id])
+  ingredients String
+  Category    Category   @relation(fields: [categoryId], references: [id])
+  User        User       @relation(fields: [userId], references: [id])
+  Image       Image[]
+  Favorite    Favorite[]
 }
 
-enum MeasurementUnit {
-  GRAMOS
-  KILOGRAMOS
-  MILLILITROS
-  LITROS
-  CUCHARADA
-  CUCHARADITA
-  TAZA
-  PIEZA
-  PIZCA
+model Image {
+  id       Int    @id @default(autoincrement())
+  url      String
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+  recipeId Int
+}
+
+model Favorite {
+  id       Int    @id @default(autoincrement())
+  user     User   @relation(fields: [userId], references: [id])
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+  userId   String
+  recipeId Int
+
+  @@unique([userId, recipeId])
 }

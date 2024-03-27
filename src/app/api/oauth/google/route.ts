@@ -11,11 +11,18 @@ export async function GET(request: Request): Promise<Response> {
   const storedState = cookies().get("google_oauth_state")?.value ?? null;
   const storedCodeVerifier = cookies().get("code_verifier")?.value ?? null;
 
-  if (!code || !storedState || !storedCodeVerifier || state !== storedState) {
-    return new Response(null, {
-      status: 400,
-    });
+  if (!code || !storedState || !storedCodeVerifier) {
+    return Response.json(
+      {
+        error: "Invalid request",
+      },
+      {
+        status: 400,
+      }
+    );
   }
+
+  console.log("antes del try");
 
   try {
     const tokens = await google.validateAuthorizationCode(
@@ -31,7 +38,9 @@ export async function GET(request: Request): Promise<Response> {
         },
       }
     );
+
     const user = await response.json();
+    console.log("🚀 ~ GET ~ user:", user);
 
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -62,38 +71,39 @@ export async function GET(request: Request): Promise<Response> {
           Location: "/",
         },
       });
-      // biome-ignore lint/style/noUselessElse: <explanation>
-    } else {
-      console.log("new user");
-      const newUser = await prisma.user.create({
-        data: {
-          username: user.name,
-          email: user.email,
-        },
-      });
-
-      const oauthAccount = await prisma.oauth_account.create({
-        data: {
-          provider_id: "google",
-          provider_user_id: user.sub,
-          userId: newUser.id,
-        },
-      });
-
-      const session = await lucia.createSession(newUser.id, {});
-      const sessionCookie = lucia.createSessionCookie(session.id);
-      cookies().set(
-        sessionCookie.name,
-        sessionCookie.value,
-        sessionCookie.attributes
-      );
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: "/",
-        },
-      });
     }
+
+    console.log("user", user);
+    // else {
+    //   const newUser = await prisma.user.create({
+    //     data: {
+    //       username: user.name,
+    //       email: user.email,
+    //     },
+    //   });
+
+    //   const oauthAccount = await prisma.oauth_account.create({
+    //     data: {
+    //       provider_id: "google",
+    //       provider_user_id: user.sub,
+    //       userId: newUser.id,
+    //     },
+    //   });
+
+    //   const session = await lucia.createSession(newUser.id, {});
+    //   const sessionCookie = lucia.createSessionCookie(session.id);
+    //   cookies().set(
+    //     sessionCookie.name,
+    //     sessionCookie.value,
+    //     sessionCookie.attributes
+    //   );
+    //   return new Response(null, {
+    //     status: 302,
+    //     headers: {
+    //       Location: "/",
+    //     },
+    //   });
+    // }
   } catch (e) {
     if (e instanceof OAuth2RequestError) {
       const { request, message, description } = e;

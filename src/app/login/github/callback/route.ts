@@ -16,17 +16,13 @@ export async function GET(request: Request): Promise<Response> {
 
   try {
     const tokens = await github.validateAuthorizationCode(code);
-    console.log(tokens);
+
     const githubUserResponse = await fetch("https://api.github.com/user", {
       headers: {
         Authorization: `Bearer ${tokens.accessToken}`,
       },
     });
     const githubUser: GitHubUser = await githubUserResponse.json();
-
-    console.log(githubUser);
-
-    console.log("Starting");
 
     const existingAccount = await prisma.oauth_account.findFirst({
       where: {
@@ -57,7 +53,10 @@ export async function GET(request: Request): Promise<Response> {
           Location: "/",
         },
       });
+
+      // biome-ignore lint/style/noUselessElse: <explanation>
     } else {
+      console.log("Creating new user");
       const newUser = await prisma.user.create({
         data: {
           username: githubUser.login,

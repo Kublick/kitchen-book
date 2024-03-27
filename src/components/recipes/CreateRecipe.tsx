@@ -76,6 +76,8 @@ interface ResponseData {
 
 export function CreateRecipeForm({ categories }: PageProps) {
   const { editor } = useRecipeEditor({ content: "" });
+  const { editor: ingredientEditor } = useRecipeEditor({ content: "" });
+
   //   const { toast } = useToast();
 
   //   const createRecipe = api.recipe.createRecipe.useMutation({
@@ -111,11 +113,6 @@ export function CreateRecipeForm({ categories }: PageProps) {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    name: "ingredients",
-    control: form.control,
-  });
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const formData = new FormData();
     formData.append("title", values.title);
@@ -126,7 +123,7 @@ export function CreateRecipeForm({ categories }: PageProps) {
     formData.append("cookTime", values.cookTime.toString());
     formData.append("userId", values.userId.toString());
     formData.append("procedure", editor?.getHTML() ?? "");
-    formData.append("ingredients", JSON.stringify(values.ingredients));
+    formData.append("ingredients", ingredientEditor?.getHTML() ?? "");
 
     if (values.images && values.images.length > 0) {
       for (let i = 0; i < values.images.length; i++) {
@@ -150,11 +147,10 @@ export function CreateRecipeForm({ categories }: PageProps) {
                   {...fieldProps}
                   placeholder="Seleccione una imagen"
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={(event) => {
                     if (event.target.files) {
                       const _files = Array.from(event.target.files);
-                      console.log(_files);
                       onChange(_files);
                     }
                   }}
@@ -294,7 +290,16 @@ export function CreateRecipeForm({ categories }: PageProps) {
           />
         </div>
 
-        {fields.map((field, index) => {
+        <div>
+          <FormLabel className="py-4">Ingredientes</FormLabel>
+
+          <div className="divide-y divide-gray-100 border border-gray-600 transition-colors focus-within:border-indigo-600">
+            <EditorToolbar editor={ingredientEditor} />
+            <EditorContent editor={ingredientEditor} />
+          </div>
+        </div>
+
+        {/* {fields.map((field, index) => {
           return (
             <div key={field.id} className="flex items-center gap-4">
               <FormField
@@ -383,7 +388,7 @@ export function CreateRecipeForm({ categories }: PageProps) {
           }
         >
           Agregar Ingrediente
-        </Button>
+        </Button> */}
         <div>
           <FormLabel className="py-4">Procedimiento</FormLabel>
 

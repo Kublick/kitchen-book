@@ -4,7 +4,11 @@ import prisma from "@/lib/prisma";
 
 export const getRecipes = async () => {
   try {
-    const recipes = await prisma.recipe.findMany({});
+    const recipes = await prisma.recipe.findMany({
+      include: {
+        Image: true,
+      },
+    });
     return recipes;
   } catch (error) {
     console.log(error);

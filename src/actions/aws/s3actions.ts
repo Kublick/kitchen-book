@@ -23,16 +23,21 @@ export async function getSignedURL() {
     };
   }
 
+  const name = `myfile-${Date.now()}.jpg`;
+
   const putObjctCommand = new PutObjectCommand({
     Bucket: process.env.NEXT_AWS_S3_BUCKET_NAME ?? "",
-    Key: "test-file",
+    Key: name,
   });
 
   const url = await getSignedUrl(s3, putObjctCommand, { expiresIn: 60 });
 
+  const fileUrl = `https://${process.env.NEXT_AWS_S3_BUCKET_NAME || ""}.s3.${process.env.NEXT_AWS_S3_REGION}.amazonaws.com/${name}`;
+
   return {
     sucess: {
       url,
+      fileUrl,
     },
   };
 }
