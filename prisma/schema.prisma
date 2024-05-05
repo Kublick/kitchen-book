@@ -53,6 +53,7 @@ model Recipe {
   cookTime    Int
   portions    Int
   prepTime    Int
+  slug        String
   ingredients String
   Category    Category   @relation(fields: [categoryId], references: [id])
   User        User       @relation(fields: [userId], references: [id])

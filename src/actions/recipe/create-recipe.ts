@@ -41,7 +41,9 @@ export const createRecipe = async (formData: FormData) => {
   }
   const data = Object.fromEntries(formData);
   const recipeParse = recipeSchema.parse(data);
-  const { ingredients, ...recipeData } = recipeParse;
+
+  // Generate a unique Slug from recipeParse.title
+
   await prisma.$transaction(async (prisma) => {
     const images = formData.getAll("images");
     if (!images) {
@@ -70,6 +72,7 @@ export const createRecipe = async (formData: FormData) => {
     const saveRecipe = await prisma.recipe.create({
       data: {
         ...recipeParse,
+        slug: "",
         updatedAt: new Date(),
         userId: user?.id ?? "",
         Image: {
@@ -82,6 +85,19 @@ export const createRecipe = async (formData: FormData) => {
       },
     });
 
+    const slug = recipeParse.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
+    await prisma.recipe.update({
+      where: {
+        id: saveRecipe.id,
+      },
+      data: {
+        slug,
+      },
+    });
     return saveRecipe;
   });
 };

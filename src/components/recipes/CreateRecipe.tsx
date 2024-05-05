@@ -23,9 +23,12 @@ import { Input } from "@/components/ui/input";
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
 import { EditorContent } from "@tiptap/react";
 import { useRecipeEditor } from "@/components/editor/use-recipe-editor";
-
-import { X } from "lucide-react";
+import "filepond/dist/filepond.min.css";
+import { FilePond, registerPlugin } from "react-filepond";
+import FilePondPluginImagePreview from "filepond-plugin-image-preview";
+import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import { createRecipe } from "@/actions/recipe/create-recipe";
+import { useRouter } from "next/navigation";
 
 // import { useToast } from "@/components/ui/use-toast";
 
@@ -40,27 +43,8 @@ const formSchema = z.object({
   cookTime: z.number().min(1, "Ingrese el tiempo de cocción"),
   procedure: z.string({ required_error: "El procedimiento es requerido." }),
   description: z.string({ required_error: "La descripcion es requerida." }),
-  imageUrl: z.string().nullable(),
   categoryId: z.number({ required_error: "La categoria es requerida." }),
   images: z.custom<File[]>().nullable(),
-  ingredients: z.array(
-    z.object({
-      name: z.string(),
-      amount: z.number(),
-      unit: z.enum([
-        "GRAMOS",
-        "KILOGRAMOS",
-        "MILLILITROS",
-        "LITROS",
-        "CUCHARADA",
-        "CUCHARADITA",
-        "TAZA",
-        "PIEZA",
-        "PIZCA",
-      ]),
-    })
-  ),
-  userId: z.number(),
 });
 
 interface PageProps {
@@ -74,21 +58,12 @@ interface ResponseData {
   imageNames: string[];
 }
 
+registerPlugin(FilePondPluginImagePreview);
+
 export function CreateRecipeForm({ categories }: PageProps) {
+  const router = useRouter();
   const { editor } = useRecipeEditor({ content: "" });
   const { editor: ingredientEditor } = useRecipeEditor({ content: "" });
-
-  //   const { toast } = useToast();
-
-  //   const createRecipe = api.recipe.createRecipe.useMutation({
-  //     onSuccess: () => {
-  //       toast({
-  //         title: "Receta registrada exitosamente",
-  //       });
-  //       // form.reset();
-  //       // editor?.commands.clearContent(true);
-  //     },
-  //   });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -96,19 +71,10 @@ export function CreateRecipeForm({ categories }: PageProps) {
       title: "",
       procedure: "",
       description: "",
-      imageUrl: "www.google.com",
       categoryId: 1,
       portions: 0,
       cookTime: 0,
       prepTime: 0,
-      ingredients: [
-        {
-          name: "",
-          amount: 0,
-          unit: "GRAMOS",
-        },
-      ],
-      userId: 1,
       images: null,
     },
   });
@@ -121,7 +87,6 @@ export function CreateRecipeForm({ categories }: PageProps) {
     formData.append("portions", values.portions.toString());
     formData.append("prepTime", values.prepTime.toString());
     formData.append("cookTime", values.cookTime.toString());
-    formData.append("userId", values.userId.toString());
     formData.append("procedure", editor?.getHTML() ?? "");
     formData.append("ingredients", ingredientEditor?.getHTML() ?? "");
 
@@ -132,184 +97,140 @@ export function CreateRecipeForm({ categories }: PageProps) {
     }
 
     await createRecipe(formData);
+
+    router.push("/");
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="images"
-          render={({ field: { onChange, value, ...fieldProps } }) => (
-            <FormItem>
-              <FormControl>
-                <Input
-                  {...fieldProps}
-                  placeholder="Seleccione una imagen"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(event) => {
-                    if (event.target.files) {
-                      const _files = Array.from(event.target.files);
-                      onChange(_files);
-                    }
-                  }}
-                  multiple={true}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre</FormLabel>
-              <FormControl>
-                <Input placeholder="Nombre receta" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descripcion</FormLabel>
-              <FormControl>
-                <Input placeholder="Nombre receta" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex gap-4">
-          <FormField
-            control={form.control}
-            name={"categoryId"}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Categoria</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={(value) => {
-                      console.log(value);
-                      field.onChange(Number(value));
-                    }}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem
-                          value={category.id.toString()}
-                          key={category.name}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="portions"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Porciones</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Porciones por receta"
-                    type="number"
-                    {...field}
-                    onChange={(e) => {
-                      field.onChange(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      );
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="prepTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tiempo de preparación</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Tiempo de preparación"
-                    type="number"
-                    {...field}
-                    onChange={(e) => {
-                      field.onChange(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      );
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="cookTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tiempo de cocción</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Tiempo de preparación"
-                    {...field}
-                    onChange={(e) => {
-                      field.onChange(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      );
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div>
-          <FormLabel className="py-4">Ingredientes</FormLabel>
-
-          <div className="divide-y divide-gray-100 border border-gray-600 transition-colors focus-within:border-indigo-600">
-            <EditorToolbar editor={ingredientEditor} />
-            <EditorContent editor={ingredientEditor} />
-          </div>
-        </div>
-
-        {/* {fields.map((field, index) => {
-          return (
-            <div key={field.id} className="flex items-center gap-4">
+    <div className="pb-4">
+      <div className="bg-primary p-4 mb-4">
+        <h1 className="text-xl md:text-3xl text-white text-bold">
+          Recetario de mi ama / Registro de recetas
+        </h1>
+      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
               <FormField
                 control={form.control}
-                name={`ingredients.${index}.amount`}
+                name="title"
                 render={({ field }) => (
                   <FormItem>
+                    <FormLabel>Nombre</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nombre receta" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descripcion</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Descripcion" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-4">
+                <FormField
+                  control={form.control}
+                  name={"categoryId"}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={(value) => {
+                            console.log(value);
+                            field.onChange(Number(value));
+                          }}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem
+                                value={category.id.toString()}
+                                key={category.name}
+                              >
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="portions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Porciones</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Porciones por receta"
+                          type="number"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value)
+                            );
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="prepTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tiempo de preparación</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Cantidad"
+                        placeholder="Tiempo de preparación"
+                        type="number"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(
+                            e.target.value === "" ? "" : Number(e.target.value)
+                          );
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cookTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tiempo de cocción</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Tiempo de preparación"
                         {...field}
                         onChange={(e) => {
                           field.onChange(
@@ -323,84 +244,59 @@ export function CreateRecipeForm({ categories }: PageProps) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name={`ingredients.${index}.unit`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Select onValueChange={field.onChange}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Medida" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="GRAMOS">gr</SelectItem>
-                          <SelectItem value="KILOGRAMOS">kg</SelectItem>
-                          <SelectItem value="MILLILITROS">ml</SelectItem>
-                          <SelectItem value="LITROS">lt</SelectItem>
-                          <SelectItem value="CUCHARADITA">
-                            cucharadita
-                          </SelectItem>
-                          <SelectItem value="CUCHARADA">cucharada</SelectItem>
-                          <SelectItem value="TAZA">tz</SelectItem>
-                          <SelectItem value="PIEZA">pz</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name={`ingredients.${index}.name`}
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormControl>
-                      <Input placeholder="Nombre Ingrediente" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                variant="destructive"
-                type="button"
-                onClick={() => remove(index)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div>
+                <FormLabel className="py-4">Ingredientes</FormLabel>
+                <div className="divide-y divide-gray-100 border border-gray-600 transition-colors focus-within:border-indigo-600">
+                  <EditorToolbar editor={ingredientEditor} />
+                  <EditorContent editor={ingredientEditor} />
+                </div>
+              </div>
+              <div>
+                <FormLabel className="py-4">Procedimiento</FormLabel>
+                <div className="divide-y divide-gray-100 border border-gray-600 transition-colors focus-within:border-indigo-600">
+                  <EditorToolbar editor={editor} />
+                  <EditorContent editor={editor} />
+                </div>
+              </div>
             </div>
-          );
-        })}
-        <Button
-          className="text-muted-foreground "
-          variant="ghost"
-          type="button"
-          onClick={() =>
-            append({
-              name: "",
-              amount: 0,
-              unit: "GRAMOS",
-            })
-          }
-        >
-          Agregar Ingrediente
-        </Button> */}
-        <div>
-          <FormLabel className="py-4">Procedimiento</FormLabel>
-
-          <div className="divide-y divide-gray-100 border border-gray-600 transition-colors focus-within:border-indigo-600">
-            <EditorToolbar editor={editor} />
-            <EditorContent editor={editor} />
+            <div>
+              <FormField
+                control={form.control}
+                name="images"
+                render={({ field: { onChange, value, ...fieldProps } }) => (
+                  <FormItem>
+                    <FormLabel className="py-4">
+                      Imagenes <span className="text-xs">(3 maximo)</span>
+                    </FormLabel>
+                    <FormControl>
+                      <FilePond
+                        acceptedFileTypes={[
+                          "image/jpeg",
+                          "image/png",
+                          "image/webp",
+                        ]}
+                        files={value as File[]}
+                        onupdatefiles={(fileItems) => {
+                          const files = fileItems.map(
+                            (fileItem) => fileItem.file
+                          );
+                          onChange(files);
+                        }}
+                        allowMultiple={true}
+                        maxFiles={3}
+                        name="images"
+                        labelIdle='Arrastra tus archivos o <span class="filepond--label-action">Seleccionalos</span>'
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
-        </div>
 
-        <Button type="submit">Submit</Button>
-      </form>
-      {/* <DevTool control={form.control} /> */}
-    </Form>
+          <Button type="submit">Submit</Button>
+        </form>
+      </Form>
+    </div>
   );
 }

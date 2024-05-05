@@ -15,3 +15,6 @@ export const getRecipes = async () => {
     throw new Error("Error al obtener las recetas");
   }
 };
+
+
+export const getRecipeById = async (id: number) => {}
